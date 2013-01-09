@@ -1,1 +1,14 @@
 *.pyc
+COPYING
+INSTALL
+Makefile
+Makefile.in
+aclocal.m4
+autoregen.sh
+config.log
+config.status
+configure
+install-sh
+missing
+nagios-one.spec
+py-compile
