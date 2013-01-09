@@ -18,6 +18,9 @@ class Memory(logcommand.NagiosCommand):
             action="store", dest="critical", default="1024M",
             help="Memory to critical at (default %default)")
 
+        self.parser.add_option('-M', '--maximum',
+            action="store", dest="maximum", default="4G",
+            help="Maximum memory for performance data (default %default)")
 
     def do(self, args):
         command = self.parentCommand.command
@@ -38,6 +41,12 @@ class Memory(logcommand.NagiosCommand):
         formatted = formatting.formatStorage(float(mem) * 1024)
         msg = "Memory for process %s with PID %s is %s" % (
                 command, pid, formatted)
+
+        msg += '|' + "memory=%d;%d;%d;0;%d" % (
+            int(mem) * 1024,
+            formatting.parseStorage(self.options.warning),
+            formatting.parseStorage(self.options.critical),
+            formatting.parseStorage(self.options.maximum))
 
         if float(mem) * 1024 >= formatting.parseStorage(self.options.critical):
             self.critical(msg)
