@@ -1,0 +1,6 @@
+[submodule "none/extern/python-command"]
+	path = none/extern/python-command
+	url = git://github.com/thomasvs/python-command.git
+[submodule "none/extern/flog"]
+	path = none/extern/flog
+	url = git@github.com:Flumotion/flog.git
