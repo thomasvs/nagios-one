@@ -1,0 +1,77 @@
+%define pyver %(%{__python} -c "import sys; print sys.version[:3]")
+%{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
+
+
+Name:           nagios-one
+Version:        @VERSION@
+Release:        1%{dist}
+Summary:        Nagios plug-ins for the Flumotion Streaming Platform
+
+Source0:        %{name}-%{version}.tar.bz2
+
+Group:          Applications/System
+License:        GPLv2+
+URL:            http://github.com/thomasvs/nagios-one
+
+BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+
+# this package is not noarch because the base nagios package has C plugins
+
+Requires:       python
+
+# upstream Fedora does not use libexecdir because it's not in the FHS
+# but it's best to use it in order to not have lib vs. lib64 in the conf
+%define nagiosdir %{_libexecdir}/nagios
+
+%description
+nagios-one is a set of unified Nagios plugins.
+
+%prep
+
+%setup -q
+%configure
+
+%build
+
+%install
+rm -rf $RPM_BUILD_ROOT
+make DESTDIR=$RPM_BUILD_ROOT install
+
+
+install -m 755 -d $RPM_BUILD_ROOT%{nagiosdir}/plugins
+
+# Compatibility symlinks of plugins /usr/lib -> /usr/libexec
+%ifarch i386
+mkdir -p %{buildroot}%{_libdir}/nagios/plugins
+cd %{buildroot}%{_libexecdir}/nagios/plugins
+for plugin in *; do
+    # This is required as the existing directory can't be replaced by a symlink
+    if [ "${plugin}" = "lib" ]; then
+        cp -a  %{buildroot}%{_libexecdir}/nagios/plugins/${plugin} \
+          %{buildroot}%{_libdir}/nagios/plugins/${plugin}
+    else
+        ln -s %{_libexecdir}/nagios/plugins/${plugin} \
+          %{buildroot}%{_libdir}/nagios/plugins/${plugin}
+    fi
+done
+cd -
+%endif
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+%files
+%defattr(-,root,root,-)
+%{nagiosdir}/plugins/none
+%{python_sitelib}/none
+
+
+# Compatibility symlinks
+%ifarch i386
+%{_libdir}/nagios/plugins/*
+%endif
+
+%changelog
+* Thu Jan 10 2013 Thomas Vander Stichele <thomas at apestaart dot org>
+- 0.0.1-1
+- initial package
