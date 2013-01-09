@@ -56,4 +56,6 @@ You can get help on subcommands by using the -h option to the subcommand.
 
     def parse(self, argv):
         log.debug("none", "none %s" % " ".join(argv))
-        logcommand.LogCommand.parse(self, argv)
+        ret = logcommand.LogCommand.parse(self, argv)
+        log.debug("none", "main: returned %r" % ret)
+        return ret

@@ -37,3 +37,22 @@ class LogCommand(command.Command, log.Loggable):
     def debug(self, format, *args):
         kwargs = {}
         log.Loggable.doLog(self, log.DEBUG, -2, format, *args, **kwargs)
+
+
+class NagiosCommand(LogCommand):
+
+    def ok(self, msg):
+        self.stdout.write('OK: %s\n' % msg)
+        raise command.CommandExited(0)
+
+    def warning(self, msg):
+        self.stdout.write('WARNING: %s\n' % msg)
+        raise command.CommandExited(1)
+
+    def critical(self, msg):
+        self.stdout.write('CRITICAL: %s\n' % msg)
+        raise command.CommandExited(2)
+
+    def unknown(self, msg):
+        self.stdout.write('UNKNOWN: %s\n' % msg)
+        raise command.CommandExited(3)
