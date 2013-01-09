@@ -4,7 +4,7 @@
 
 Name:           nagios-one
 Version:        @VERSION@
-Release:        1%{dist}
+Release:        @PACKAGE_VERSION_RELEASE@%{?dist}
 Summary:        Nagios plug-ins for the Flumotion Streaming Platform
 
 Source0:        %{name}-%{version}.tar.bz2
