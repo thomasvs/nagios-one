@@ -1,14 +1,15 @@
 # -*- Mode: Python -*-
 # vi:si:et:sw=4:sts=4:ts=4
 
-import commands
+import os
 
-from none.common import logcommand, formatting
+from none.common import logcommand, formatting, process
 
 
-class Memory(logcommand.NagiosCommand):
+class _Memory(logcommand.NagiosCommand):
 
-    summary = "check memory use of process"
+    processAttr = None
+    label = None
 
     def addOptions(self):
         self.parser.add_option('-w', '--warning',
@@ -24,42 +25,68 @@ class Memory(logcommand.NagiosCommand):
 
     def do(self, args):
         command = self.parentCommand.command
-        if not command:
-            self.unknown('Specify a command to process')
+        selecter = process.commandSelecterFactory(prefix=command)
+        pidDict = process.getProcesses(selecter=selecter)
 
-        pids = commands.getoutput("pgrep -f %s | xargs | tr ' ' ','" %
-            self.parentCommand.command)
+        self.debug('matching pids: %r' % pidDict.keys())
 
-        self.debug('matching pids: %r' % pids)
+        vsizes = pidDict.items()
+        vsizes.sort(cmp=lambda x, y:
+            getattr(x[1], self.processAttr) < getattr(y[1], self.processAttr))
 
-        highest = commands.getoutput(
-            "ps p %s eo pid=,vsz=  | sort -nrk2 | head -n 1" % pids)
-        (pid, mem) = highest.split()[:2]
+        highest = vsizes[-1]
+        (pid, proc) = highest
+        mem = self.toBytes(getattr(proc, self.processAttr))
 
-        self.debug('highest pid %s, mem %s KB' % (pid, mem))
+        self.info('Highest pid is %s, memory %s bytes' % (pid, mem))
 
-        formatted = formatting.formatStorage(float(mem) * 1024)
+        formatted = formatting.formatStorage(float(mem))
         msg = "Memory for process %s with PID %s is %s" % (
                 command, pid, formatted)
 
-        msg += '|' + "memory=%d;%d;%d;0;%d" % (
-            int(mem) * 1024,
+        msg += '|' + "%s=%d;%d;%d;0;%d" % (
+            self.label,
+            int(mem),
             formatting.parseStorage(self.options.warning),
             formatting.parseStorage(self.options.critical),
             formatting.parseStorage(self.options.maximum))
 
-        if float(mem) * 1024 >= formatting.parseStorage(self.options.critical):
+        if float(mem) >= formatting.parseStorage(self.options.critical):
             self.critical(msg)
-        if float(mem) * 1024 >= formatting.parseStorage(self.options.warning):
+        if float(mem) >= formatting.parseStorage(self.options.warning):
             self.warning(msg)
         self.ok(msg)
+
+    def toBytes(self, value):
+        return value
+
+class VSize(_Memory):
+
+    processAttr = 'vsize'
+    label = 'memory'
+
+# temporary compatibility
+Memory = VSize
+
+class RSS(_Memory):
+
+    """
+    Checks the matching process with the highest RSS memory.
+    """
+
+    processAttr = 'rss'
+    label = 'rss'
+
+    def toBytes(self, value):
+        # in pages
+        return value * os.sysconf('SC_PAGESIZE')
 
 
 class Process(logcommand.LogCommand):
 
     summary = "process checks"
 
-    subCommandClasses = [Memory, ]
+    subCommandClasses = [Memory, RSS, VSize]
 
     def addOptions(self):
         self.parser.add_option('-c', '--command',
@@ -68,3 +95,6 @@ class Process(logcommand.LogCommand):
 
     def handleOptions(self, options):
         self.command = options.command
+
+        if not self.command:
+            self.unknown('Specify a command to check process status of')

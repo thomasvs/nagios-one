@@ -6,4 +6,5 @@ none_PYTHON = \
 	__init__.py \
 	formatting.py \
 	log.py \
-	logcommand.py
+	logcommand.py \
+	process.py
