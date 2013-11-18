@@ -53,10 +53,6 @@ class ProcessFactory:
         # this is a factory function, so suppress inconsistent return value
         # warnings
         __pychecker__ = '--no-returnvalues'
-        handle = open('/proc/%d/stat' % pid)
-        line = handle.read()
-        fields = line.split(' ')
-        cmd = fields[1][1:-1] # strip off parentheses
 
         return Process(pid)
 
