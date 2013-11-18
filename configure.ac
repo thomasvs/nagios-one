@@ -57,6 +57,7 @@ m4/Makefile
 none/Makefile
 none/main/Makefile
 none/common/Makefile
+none/test/Makefile
 none/extern/Makefile
 nagios-one.spec
 )

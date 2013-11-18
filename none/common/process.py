@@ -1,10 +1,24 @@
-# -*- Mode: Python -*-
+# -*- Mode: Python; test-case-name: none.test.test_common_process -*-
 # vi:si:et:sw=4:sts=4:ts=4
 
 import os
+import re
 
+from none.common import log
 
-class Process:
+# example:
+# 1 (systemd) S 0 1 1 0 -1 4219136 39364 53335146 889 127526 53 449 2828476 602170 20 0 1 0 1 54607872 475 18446744073709551615 1 1 0 0 0 0 671173123 4096 1260 18446744073709551615 0 0 17 1 0 0 1566 0 1353199 0 0 0 0 0 0 0 0
+
+_STAT_RE = re.compile(r"""
+    ^
+    (?P<pid>\d+)     # pid
+    \s+
+    \((?P<cmd>.*)\)  # command, between parentheses
+    (?P<fields>.*)   # a bunch of integer fields
+    $
+    """, re.VERBOSE)
+
+class Process(log.Loggable):
     """
     I hold information about a process with a given pid based on information in
     /proc/(pid)/stat.  See man proc for more info.
@@ -19,15 +33,22 @@ class Process:
     @type  rss:     int
     """
 
-    def __init__(self, pid):
-        handle = open('/proc/%d/stat' % pid)
-        line = handle.read()
+    def __init__(self, pid, line=None):
+        if not line:
+            handle = open('/proc/%d/stat' % pid)
+            line = handle.read()
 
         # see man proc
-        fields = line.split(' ')
-        assert pid == int(fields[0])
+        m = _STAT_RE.search(line)
+        if not m:
+            raise IndexError, "Cannot parse stat line %r" % (line, )
+
+        assert pid == int(m.group('pid'))
+
+        fields = m.group('fields').split()
+        self.debug('fields for process [%05d]: %r' % (pid, fields))
         self.pid = pid
-        self.cmd = fields[1][1:-1] # strip off parentheses
+        self.cmd = m.group('cmd')
         self.ppid = int(fields[3])
         self.vsize = int(fields[22])
         self.rss = int(fields[23])
