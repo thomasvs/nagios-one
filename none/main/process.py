@@ -34,6 +34,8 @@ class _Memory(logcommand.NagiosCommand):
         vsizes.sort(cmp=lambda x, y:
             getattr(x[1], self.processAttr) < getattr(y[1], self.processAttr))
 
+        if not vsizes:
+            self.critical("No processes found with command %s" % command)
         highest = vsizes[-1]
         (pid, proc) = highest
         mem = self.toBytes(getattr(proc, self.processAttr))

@@ -46,7 +46,7 @@ class Process(log.Loggable):
         assert pid == int(m.group('pid'))
 
         fields = m.group('fields').split()
-        self.debug('fields for process [%05d]: %r' % (pid, fields))
+        self.log('fields for process [%05d]: %r' % (pid, fields))
         self.pid = pid
         self.cmd = m.group('cmd')
         self.ppid = int(fields[3])
